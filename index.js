@@ -1,46 +1,32 @@
-import express from "express";
-import dotenv from "dotenv";
-import bodyParser from "body-parser";
-import { OpenAI } from "openai";
-
-dotenv.config();
-
+const express = require('express');
+const cors = require('cors');
 const app = express();
+require('dotenv').config();
 const port = process.env.PORT || 3000;
-app.use(bodyParser.json());
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+app.use(cors()); // <-- LIBERA ACESSO DE QUALQUER ORIGEM
+app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Palpite Backend Rodando...");
-});
-
-app.post("/palpite", async (req, res) => {
-  try {
-    const { jogo } = req.body;
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "Você é um especialista em estatísticas de futebol. Gere 3 palpites coerentes e objetivos para o jogo informado, sem contradições, incluindo: resultado provável, chance de BTTS e total de gols provável."
-        },
-        {
-          role: "user",
-          content: `Jogo: ${jogo}`
-        }
-      ],
-      temperature: 0.7
-    });
-
-    const resposta = completion.choices[0].message.content;
-    res.json({ palpite: resposta });
-  } catch (error) {
-    console.error("Erro ao gerar palpite:", error);
-    res.status(500).json({ error: "Erro ao gerar palpite" });
-  }
+app.get('/palpites', async (req, res) => {
+  // Seu código de geração de palpites aqui...
+  const exemplo = {
+    campeonato: 'Brasileirão Série A',
+    jogos: [
+      {
+        time_casa: 'Flamengo',
+        time_fora: 'Palmeiras',
+        data: '12/07/2025 18:30',
+        palpites: [
+          'Vitória do Flamengo',
+          'Mais de 2.5 gols',
+          'Ambas marcam: Sim'
+        ]
+      }
+    ]
+  };
+  res.json([exemplo]);
 });
 
 app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
+  console.log(`Servidor rodando em http://localhost:${port}`);
 });
