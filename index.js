@@ -1,59 +1,46 @@
-require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
-const { OpenAI } = require('openai');
-const cors = require('cors');
+import express from "express";
+import dotenv from "dotenv";
+import bodyParser from "body-parser";
+import { OpenAI } from "openai";
+
+dotenv.config();
 
 const app = express();
-app.use(cors());
 const port = process.env.PORT || 3000;
+app.use(bodyParser.json());
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Exemplo de scraping do SofaScore (adaptado)
-async function getJogosDoDia() {
-    try {
-        const { data } = await axios.get('https://www.sofascore.com/pt/futebol');
-        const $ = cheerio.load(data);
-        const jogos = [];
-
-        $('a[href*="/time/"]').each((i, el) => {
-            const texto = $(el).text().trim();
-            if (texto && texto.length > 3) {
-                jogos.push(texto);
-            }
-        });
-
-        return jogos.slice(0, 10); // limitar para testes
-    } catch (error) {
-        console.error("Erro no scraping:", error.message);
-        return [];
-    }
-}
-
-async function gerarPalpitesIA(jogos) {
-    try {
-        const prompt = `Baseado nos seguintes jogos de futebol do dia: ${jogos.join(", ")}, gere 3 palpites para cada um, considerando estatísticas reais como gols, escanteios, cartões e quem deve vencer. Os palpites devem ser claros, objetivos e não contraditórios.`;
-
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4',
-            messages: [{ role: 'user', content: prompt }],
-        });
-
-        return response.choices[0].message.content;
-    } catch (err) {
-        console.error("Erro com OpenAI:", err.message);
-        return "Palpite indisponível no momento.";
-    }
-}
-
-app.get('/palpites', async (req, res) => {
-    const jogos = await getJogosDoDia();
-    if (!jogos.length) return res.json({ error: "Sem jogos encontrados." });
-
-    const palpites = await gerarPalpitesIA(jogos);
-    res.json({ jogos, palpites });
+app.get("/", (req, res) => {
+  res.send("Palpite Backend Rodando...");
 });
 
-app.listen(port, () => console.log(`Servidor rodando em http://localhost:${port}`));
+app.post("/palpite", async (req, res) => {
+  try {
+    const { jogo } = req.body;
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [
+        {
+          role: "system",
+          content: "Você é um especialista em estatísticas de futebol. Gere 3 palpites coerentes e objetivos para o jogo informado, sem contradições, incluindo: resultado provável, chance de BTTS e total de gols provável."
+        },
+        {
+          role: "user",
+          content: `Jogo: ${jogo}`
+        }
+      ],
+      temperature: 0.7
+    });
+
+    const resposta = completion.choices[0].message.content;
+    res.json({ palpite: resposta });
+  } catch (error) {
+    console.error("Erro ao gerar palpite:", error);
+    res.status(500).json({ error: "Erro ao gerar palpite" });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});
