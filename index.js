@@ -4,7 +4,6 @@ const dotenv = require("dotenv");
 const { Configuration, OpenAIApi } = require("openai");
 
 dotenv.config();
-
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -15,7 +14,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 app.get("/", (req, res) => {
-  res.send("Palpite Backend Online");
+  res.send("Palpite Backend Funcionando");
 });
 
 app.get("/palpites", async (req, res) => {
@@ -24,17 +23,17 @@ app.get("/palpites", async (req, res) => {
       model: "gpt-4",
       messages: [{
         role: "user",
-        content: "Gere 10 palpites realistas e curtos para jogos de futebol do dia. Exemplo: Vitória do Flamengo, Ambas marcam, Mais de 2.5 gols."
+        content: "Gere 10 palpites curtos e realistas para jogos de futebol de hoje. Ex: Vitória do Bahia, Ambas marcam, Mais de 2.5 gols."
       }],
     });
 
     const resposta = completion.data.choices[0].message.content;
     res.json({ palpites: resposta });
-  } catch (error) {
-    console.error("Erro:", error.message);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Erro ao gerar palpites." });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor ativo na porta ${PORT}`));
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
