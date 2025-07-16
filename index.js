@@ -1,50 +1,40 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const { Configuration, OpenAIApi } = require("openai");
-require("dotenv").config();
+const express = require('express');
+const cors = require('cors');
+const { Configuration, OpenAIApi } = require('openai');
+require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+app.get('/', (req, res) => {
+  res.send('Palpite Backend Rodando...');
 });
 
-const openai = new OpenAIApi(configuration);
-
-app.get("/", (req, res) => {
-  res.send("Servidor do Palpite da Hora está online!");
-});
-
-app.post("/palpite", async (req, res) => {
-  const { prompt } = req.body;
-
-  if (!prompt) {
-    return res.status(400).json({ error: "Prompt não fornecido." });
+app.get('/palpites', async (req, res) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'Chave da API OpenAI não configurada' });
   }
 
   try {
-    const response = await openai.createChatCompletion({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content:
-            "Você é um analista esportivo que gera palpites com base em estatísticas de jogos de futebol.",
-        },
-        { role: "user", content: prompt },
-      ],
+    const configuration = new Configuration({ apiKey });
+    const openai = new OpenAIApi(configuration);
+
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-4',
+      messages: [{
+        role: 'user',
+        content: 'Gere 3 palpites de futebol realistas para jogos de hoje com base em estatísticas e desempenho dos times. Use um tom direto.'
+      }]
     });
 
-    const resposta = response.data.choices[0].message.content;
-    res.json({ resultado: resposta });
+    const resposta = completion.data.choices[0].message.content;
+    res.json({ palpites: resposta });
   } catch (error) {
-    console.error("Erro ao gerar palpite:", error.message);
-    res.status(500).json({ error: "Erro ao gerar palpite." });
+    res.status(500).json({ error: 'Erro ao gerar palpites com a OpenAI', details: error.message });
   }
 });
 
