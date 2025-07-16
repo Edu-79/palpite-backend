@@ -1,45 +1,36 @@
-
-require('dotenv').config();
 const express = require('express');
-const bodyParser = require('body-parser');
+const cors = require('cors');
 const { Configuration, OpenAIApi } = require('openai');
+require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(bodyParser.json());
+app.use(cors());
+app.use(express.json());
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-app.post('/palpites', async (req, res) => {
+app.get('/', (req, res) => {
+  res.send('Palpite Backend Rodando...');
+});
+
+app.get('/palpite', async (req, res) => {
   try {
-    const { jogos } = req.body;
-
-    if (!jogos || !Array.isArray(jogos)) {
-      return res.status(400).json({ error: 'Lista de jogos inválida.' });
-    }
-
-    const prompt = `Baseado em dados estatísticos reais, gere 3 palpites objetivos e sem contradições para cada um dos seguintes jogos. Não diga "palpite indisponível". Use linguagem simples e direta.
-
-${jogos.map((j, i) => `${i + 1}. ${j}`).join('
-')}`;
+    const prompt = `Você é um especialista em estatísticas de futebol. Gere 3 palpites claros e coerentes para jogos de hoje, como "Vitória do Real Madrid", "Mais de 2.5 gols", "Ambos marcam: sim". Use dados realistas como se fossem extraídos de sites como SofaScore e 365Scores.`;
 
     const completion = await openai.createChatCompletion({
       model: 'gpt-4',
       messages: [{ role: 'user', content: prompt }],
     });
 
-    const texto = completion.data.choices[0].message.content;
-    res.json({ palpites: texto });
+    const palpites = completion.data.choices[0].message.content;
+    res.json({ palpites });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Erro ao gerar os palpites.' });
+    res.status(500).json({ error: 'Erro ao gerar palpites', details: error.message });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
