@@ -4,40 +4,33 @@ const { Configuration, OpenAIApi } = require('openai');
 require('dotenv').config();
 
 const app = express();
-const port = process.env.PORT || 3000;
-
 app.use(cors());
 app.use(express.json());
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+const openai = new OpenAIApi(configuration);
 
 app.get('/', (req, res) => {
   res.send('Palpite Backend Rodando...');
 });
 
-app.get('/palpites', async (req, res) => {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'Chave da API OpenAI não configurada' });
-  }
-
+app.get('/palpite', async (req, res) => {
   try {
-    const configuration = new Configuration({ apiKey });
-    const openai = new OpenAIApi(configuration);
+    const prompt = `Você é um especialista em estatísticas de futebol. Gere 3 palpites claros e coerentes para jogos de hoje, como "Vitória do Real Madrid", "Mais de 2.5 gols", "Ambos marcam: sim". Use dados realistas como se fossem extraídos de sites como SofaScore e 365Scores.`;
 
     const completion = await openai.createChatCompletion({
       model: 'gpt-4',
-      messages: [{
-        role: 'user',
-        content: 'Gere 3 palpites de futebol realistas para jogos de hoje com base em estatísticas e desempenho dos times. Use um tom direto.'
-      }]
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const resposta = completion.data.choices[0].message.content;
-    res.json({ palpites: resposta });
+    const palpites = completion.data.choices[0].message.content;
+    res.json({ palpites });
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao gerar palpites com a OpenAI', details: error.message });
+    res.status(500).json({ error: 'Erro ao gerar palpites', details: error.message });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
