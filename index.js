@@ -1,36 +1,32 @@
 const express = require('express');
-const cors = require('cors');
-const { Configuration, OpenAIApi } = require('openai');
+const { Configuration, OpenAIApi } = require("openai");
 require('dotenv').config();
-
 const app = express();
-app.use(cors());
-app.use(express.json());
+const port = process.env.PORT || 3000;
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
 });
-const openai = new OpenAIApi(configuration);
 
-app.get('/', (req, res) => {
-  res.send('Palpite Backend Rodando...');
-});
+const openai = new OpenAIApi(configuration);
 
 app.get('/palpite', async (req, res) => {
   try {
-    const prompt = `Você é um especialista em estatísticas de futebol. Gere 3 palpites claros e coerentes para jogos de hoje, como "Vitória do Real Madrid", "Mais de 2.5 gols", "Ambos marcam: sim". Use dados realistas como se fossem extraídos de sites como SofaScore e 365Scores.`;
-
+    const prompt = `Gere 3 palpites estatísticos para o jogo entre Flamengo x Palmeiras hoje. Inclua sugestões de gols, escanteios e cartões, de forma clara e objetiva.`;
+    
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4',
-      messages: [{ role: 'user', content: prompt }],
+      model: "gpt-4",
+      messages: [{ role: "user", content: prompt }],
     });
 
-    const palpites = completion.data.choices[0].message.content;
-    res.json({ palpites });
+    const resposta = completion.data.choices[0].message.content;
+    res.json({ palpite: resposta });
   } catch (error) {
-    res.status(500).json({ error: 'Erro ao gerar palpites', details: error.message });
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ erro: "Erro ao buscar o palpite." });
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});
