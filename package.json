@@ -1,7 +1,7 @@
 {
-  "name": "palpite-backend",
+  "name": "palpite-do-edu",
   "version": "1.0.0",
-  "description": "Backend do app Palpite da Hora",
+  "description": "Backend do app Palpite do Edu com suporte a GPT-4",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
